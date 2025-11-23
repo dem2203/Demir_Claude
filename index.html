@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEMIR AI v8.0 - Professional Crypto Trading Bot</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: rgba(30, 41, 59, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        
+        .status-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
+        
+        .status-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, var(--card-bg), rgba(30, 58, 138, 0.3));
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .signal-card {
+            background: var(--card-bg);
+            border-left: 4px solid;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+        
+        .signal-buy {
+            border-left-color: var(--success-color);
+        }
+        
+        .signal-sell {
+            border-left-color: var(--danger-color);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .table-dark {
+            background: transparent;
+        }
+        
+        .table-dark th {
+            border-color: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        
+        .table-dark td {
+            border-color: rgba(148, 163, 184, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        .glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            border-width: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-robot me-2"></i>
+                DEMIR AI v8.0
+            </span>
+            <div class="d-flex align-items-center">
+                <span id="connectionStatus" class="status-badge status-active me-3">
+                    <i class="fas fa-circle pulse me-1"></i>
+                    Connected
+                </span>
+                <span id="currentTime" class="text-secondary"></span>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Container -->
+    <div class="container-fluid mt-4">
+        <!-- System Status Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">
+                        <i class="fas fa-chart-line me-1"></i> Daily P&L
+                    </div>
+                    <div class="metric-value text-success" id="dailyPnl">
+                        +0.00%
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">
+                        <i class="fas fa-wallet me-1"></i> Active Positions
+                    </div>
+                    <div class="metric-value" id="activePositions">
+                        0
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">
+                        <i class="fas fa-signal me-1"></i> Signals Today
+                    </div>
+                    <div class="metric-value" id="signalsToday">
+                        0
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">
+                        <i class="fas fa-shield-alt me-1"></i> Risk Level
+                    </div>
+                    <div class="metric-value text-success" id="riskLevel">
+                        LOW
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trading Mode Alert -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-warning d-flex align-items-center" role="alert" id="advisoryAlert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Advisory Mode Active</strong> - Bot is generating signals only, not executing trades
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column - Live Signals -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>
+                            Live Signals
+                            <span class="spinner-border text-primary ms-2" id="signalLoader"></span>
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div id="signalsList">
+                            <!-- Signals will be dynamically added here -->
+                            <div class="text-center text-secondary py-4">
+                                <i class="fas fa-hourglass-half fa-2x mb-3"></i>
+                                <p>Waiting for signals...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>
+                            Performance Chart
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="performanceChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - System Info -->
+            <div class="col-lg-4">
+                <!-- System Health -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-heartbeat me-2"></i>
+                            System Health
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Sentiment Analysis</span>
+                                <span class="status-badge status-active">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Technical Analysis</span>
+                                <span class="status-badge status-active">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>ML Models</span>
+                                <span class="status-badge status-active">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Exchange API</span>
+                                <span class="status-badge status-active">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Database</span>
+                                <span class="status-badge status-active">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Active Symbols -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            Active Symbols
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="symbolsList">
+                            <span class="badge bg-primary me-2 mb-2">BTCUSDT</span>
+                            <span class="badge bg-primary me-2 mb-2">ETHUSDT</span>
+                            <span class="badge bg-primary me-2 mb-2">BNBUSDT</span>
+                            <span class="badge bg-primary me-2 mb-2">SOLUSDT</span>
+                            <span class="badge bg-primary me-2 mb-2">XRPUSDT</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Quick Stats
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Win Rate</span>
+                            <span class="fw-bold">0%</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Total Trades</span>
+                            <span class="fw-bold">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Avg Signal Confidence</span>
+                            <span class="fw-bold">0%</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Uptime</span>
+                            <span class="fw-bold" id="uptime">0h 0m</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Configuration
+        const API_BASE = window.location.origin;
+        const WS_URL = `ws://${window.location.host}/ws`;
+        
+        // State
+        let signals = [];
+        let performanceData = [];
+        let startTime = Date.now();
+        
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleTimeString('en-US', { hour12: false });
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // Update uptime
+        function updateUptime() {
+            const elapsed = Date.now() - startTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
+        }
+        setInterval(updateUptime, 60000);
+        updateUptime();
+        
+        // Fetch system status
+        async function fetchStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/metrics`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateMetrics(data);
+                }
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+        
+        // Update metrics display
+        function updateMetrics(data) {
+            if (data.daily_pnl !== undefined) {
+                const pnlElement = document.getElementById('dailyPnl');
+                const pnl = parseFloat(data.daily_pnl);
+                pnlElement.textContent = `${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%`;
+                pnlElement.className = `metric-value ${pnl >= 0 ? 'text-success' : 'text-danger'}`;
+            }
+            
+            if (data.active_positions !== undefined) {
+                document.getElementById('activePositions').textContent = data.active_positions;
+            }
+            
+            if (data.signals_today !== undefined) {
+                document.getElementById('signalsToday').textContent = data.signals_today;
+            }
+        }
+        
+        // Add signal to display
+        function addSignal(signal) {
+            const signalsList = document.getElementById('signalsList');
+            
+            // Clear placeholder if exists
+            if (signalsList.querySelector('.text-center')) {
+                signalsList.innerHTML = '';
+            }
+            
+            const signalCard = document.createElement('div');
+            signalCard.className = `signal-card ${signal.action === 'BUY' ? 'signal-buy' : 'signal-sell'}`;
+            
+            const confidence = parseFloat(signal.confidence || 0);
+            const confidenceBadge = confidence >= 75 ? 'success' : confidence >= 60 ? 'warning' : 'secondary';
+            
+            signalCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="badge bg-${signal.action === 'BUY' ? 'success' : 'danger'} me-2">
+                            ${signal.action}
+                        </span>
+                        <span class="fw-bold">${signal.symbol}</span>
+                    </div>
+                    <span class="badge bg-${confidenceBadge}">
+                        ${confidence.toFixed(1)}% confidence
+                    </span>
+                </div>
+                <div class="row small">
+                    <div class="col-6">
+                        <div class="text-secondary">Entry: $${parseFloat(signal.entry_price).toFixed(4)}</div>
+                        <div class="text-secondary">SL: $${parseFloat(signal.stop_loss).toFixed(4)}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-secondary">TP1: $${parseFloat(signal.take_profit_1).toFixed(4)}</div>
+                        <div class="text-secondary">TP2: $${parseFloat(signal.take_profit_2).toFixed(4)}</div>
+                    </div>
+                </div>
+                <div class="mt-2 text-secondary small">
+                    ${new Date(signal.timestamp).toLocaleTimeString()}
+                </div>
+            `;
+            
+            // Add to top of list
+            signalsList.insertBefore(signalCard, signalsList.firstChild);
+            
+            // Keep only last 10 signals
+            while (signalsList.children.length > 10) {
+                signalsList.removeChild(signalsList.lastChild);
+            }
+            
+            // Flash animation
+            signalCard.style.animation = 'pulse 1s';
+        }
+        
+        // Initialize performance chart
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'P&L %',
+                    data: [],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Update chart with dummy data for now
+        function updateChart() {
+            const now = new Date();
+            performanceChart.data.labels.push(now.toLocaleTimeString());
+            performanceChart.data.datasets[0].data.push(Math.random() * 10 - 5);
+            
+            // Keep only last 20 points
+            if (performanceChart.data.labels.length > 20) {
+                performanceChart.data.labels.shift();
+                performanceChart.data.datasets[0].data.shift();
+            }
+            
+            performanceChart.update();
+        }
+        
+        // WebSocket connection for real-time updates
+        function connectWebSocket() {
+            const ws = new WebSocket(WS_URL);
+            
+            ws.onopen = function() {
+                console.log('WebSocket connected');
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<i class="fas fa-circle pulse me-1"></i> Connected';
+                document.getElementById('connectionStatus').className = 
+                    'status-badge status-active me-3';
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'signal') {
+                        addSignal(data.signal);
+                    } else if (data.type === 'metrics') {
+                        updateMetrics(data.metrics);
+                    } else if (data.type === 'performance') {
+                        // Update performance chart with real data
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = function() {
+                console.log('WebSocket disconnected');
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<i class="fas fa-circle me-1"></i> Disconnected';
+                document.getElementById('connectionStatus').className = 
+                    'status-badge status-danger me-3';
+                
+                // Reconnect after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+        
+        // Initialize
+        fetchStatus();
+        setInterval(fetchStatus, 5000);  // Update every 5 seconds
+        setInterval(updateChart, 10000); // Update chart every 10 seconds
+        
+        // Try to connect WebSocket (will fail if not implemented yet)
+        // connectWebSocket();
+        
+        // Simulate some signals for demonstration
+        setTimeout(() => {
+            addSignal({
+                timestamp: new Date(),
+                symbol: 'BTCUSDT',
+                action: 'BUY',
+                confidence: 78.5,
+                entry_price: 43521.50,
+                stop_loss: 42800.00,
+                take_profit_1: 44200.00,
+                take_profit_2: 45000.00
+            });
+        }, 3000);
+        
+        setTimeout(() => {
+            addSignal({
+                timestamp: new Date(),
+                symbol: 'ETHUSDT',
+                action: 'SELL',
+                confidence: 65.2,
+                entry_price: 2248.30,
+                stop_loss: 2280.00,
+                take_profit_1: 2200.00,
+                take_profit_2: 2150.00
+            });
+        }, 6000);
+    </script>
+</body>
+</html>
