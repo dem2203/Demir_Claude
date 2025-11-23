@@ -1,22 +1,7 @@
-FROM python:3.11.9-slim
+# Multi-stage build for smaller image
+FROM python:3.11-slim as builder
 
-# Metadata
-LABEL maintainer="DEMIR AI Team"
-LABEL version="8.0"
-LABEL description="Professional Cryptocurrency Trading Bot"
-
-# Set working directory
-WORKDIR /app
-
-# Environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    TZ=UTC
-
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
@@ -32,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install TA-Lib (for technical analysis)
+# Install TA-Lib
 RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     tar -xzf ta-lib-0.4.0-src.tar.gz && \
     cd ta-lib && \
@@ -42,32 +27,75 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     cd .. && \
     rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
 
-# Update pip
+# Production image
+FROM python:3.11-slim
+
+# Copy TA-Lib from builder
+COPY --from=builder /usr/lib/libta_lib.so.0 /usr/lib/
+COPY --from=builder /usr/lib/libta_lib.so.0.0.0 /usr/lib/
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Upgrade pip
 RUN pip install --upgrade pip setuptools wheel
 
-# Copy requirements first (for better caching)
+# Copy requirements
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Python packages
+RUN pip install --no-cache-dir -r requirements.txt || \
+    (echo "Some packages failed, installing core packages only..." && \
+     pip install --no-cache-dir \
+     python-dotenv==1.0.0 \
+     aiohttp==3.9.1 \
+     requests==2.31.0 \
+     pandas==2.1.3 \
+     numpy==1.24.3 \
+     scipy==1.11.4 \
+     ccxt==4.1.22 \
+     websockets==12.0 \
+     ta==0.11.0 \
+     scikit-learn==1.3.2 \
+     psycopg2-binary==2.9.9 \
+     asyncpg==0.29.0 \
+     fastapi==0.104.1 \
+     uvicorn==0.24.0 \
+     redis==5.0.1 \
+     psutil==5.9.6)
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/data /app/models /app/cache
 
-# Copy application code
-COPY . .
-
-# Create non-root user for security
+# Create non-root user
 RUN useradd -m -u 1000 demirai && \
     chown -R demirai:demirai /app
+
+# Copy application code
+COPY --chown=demirai:demirai . .
 
 # Switch to non-root user
 USER demirai
 
+# Environment variables (will be overridden by Railway)
+ENV PORT=8000 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    TZ=UTC
+
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# Expose ports
-EXPOSE 8000 8501
+# Expose port
+EXPOSE ${PORT}
 
-# Default command
+# Start command
 CMD ["python", "main.py"]
