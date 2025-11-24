@@ -1,61 +1,19 @@
-# Railway Deployment Configuration
-# DEMIR AI v8.0
-
 [build]
-builder = "NIXPACKS"
-buildCommand = "pip install --no-cache-dir -r requirements.txt"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python main.py"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5
-region = "eu-west-1"
+restartPolicyMaxRetries = 3
 
-# Railway otomatik olarak environment variables'ı inject eder
-# Variables sekmesinden ekleyebilirsiniz
-
-[env]
-PORT = "8000"
-PYTHON_VERSION = "3.11.9"
-TZ = "UTC"
-PYTHONUNBUFFERED = "1"
-PYTHONDONTWRITEBYTECODE = "1"
-
-# Railway otomatik olarak şunları sağlar:
-# - DATABASE_URL (PostgreSQL)
-# - REDIS_URL (Redis)
-# - PORT
-# - RAILWAY_ENVIRONMENT
-
-# Resource Limits (Opsiyonel)
 [[services]]
-name = "demir-ai"
-buildCommand = "pip install -r requirements.txt"
-startCommand = "python main.py"
+name = "web"
+port = 8080
 
-# Health check endpoint
-[[services.healthcheck]]
-path = "/health"
-interval = 30
-timeout = 10
-maxRetries = 3
-
-# Scaling configuration
-[[services.scaling]]
-minInstances = 1
-maxInstances = 3
-targetCPU = 70
-targetMemory = 80
-
-# Cron jobs (Opsiyonel)
-[[crons]]
-name = "daily-report"
-schedule = "0 0 * * *"  # Her gün gece yarısı
-command = "python scripts/daily_report.py"
-
-[[crons]]
-name = "backup-database"
-schedule = "0 */6 * * *"  # Her 6 saatte bir
-command = "python scripts/backup_db.py"
+[environments.production]
+PORT = "8080"
+TRADING_MODE = "ADVISORY"
+ENVIRONMENT = "production"
+LOG_LEVEL = "INFO"
