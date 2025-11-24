@@ -1,0 +1,33 @@
+# DEMIR AI v8.0 Configuration
+
+trading:
+  initial_capital: 10000.0
+  max_positions: 3
+  max_risk_per_trade: 0.02  # 2%
+  max_daily_loss: 0.05      # 5%
+  min_trade_size: 10.0      # $10 minimum
+  leverage: 1.0             # No leverage by default
+
+signals:
+  confidence_threshold: 0.7  # 70% minimum confidence
+  min_volume_24h: 1000000    # $1M volume
+  
+risk:
+  stop_loss_percentage: 0.03  # 3%
+  take_profit_percentage: 0.06  # 6%
+  trailing_stop_percentage: 0.02  # 2%
+
+exchanges:
+  binance:
+    testnet: false
+    
+database:
+  pool_size: 5
+  max_overflow: 10
+  
+cache:
+  ttl: 300  # 5 minutes
+  
+monitoring:
+  health_check_interval: 30  # seconds
+  metrics_interval: 60  # seconds
